@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: white;
+        }
+        #video-container {
+            position: relative;
+            display: inline-block;
+        }
+        #video {
+            width: 800px;
+            height: 800px;
+        }
+        #timestamp {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: black;
+            padding: 5px;
+            font-size: 16px;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: black;
+            padding: 5px;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+        #feedback-message {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: black;
+            padding: 5px;
+            font-size: 16px;
+            width: 780px;
+            text-align: center;
+        }
+        #mode-status {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background-color: black;
+            padding: 5px;
+            font-size: 16px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="video-container">
+        <img src="{{ url_for('video_feed') }}" id="video">
+        <div id="timestamp"></div>
+        <div id="instructions">W-Forward A-Left S-Backward D-Right Q-Up E-Down O-Chase R-Shoot X-Stop</div>
+        <div id="mode-status">Chase Mode: OFF</div>
+        <div id="feedback-message">Waiting for feedback...</div>
+    </div>
+    <script>
+        function updateTime() {
+            var now = new Date();
+            var timestamp = now.toLocaleString();
+            document.getElementById('timestamp').innerText = timestamp;
+        }
+
+        function sendCommand(command) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/command', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.send('command=' + command);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            sendCommand(event.key);
+        });
+
+        document.addEventListener('keyup', function(event) {
+            if (['w', 'a', 's', 'd', 'q', 'e'].includes(event.key)) {
+                sendCommand('x');
+            }
+        });
+
+        setInterval(updateTime, 1000);
+
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('server_response', function(msg) {
+            var messageElement = document.getElementById('feedback-message');
+            messageElement.innerText = JSON.stringify(msg);
+        });
+
+        socket.on('mode_status', function(data) {
+            var modeStatusElement = document.getElementById('mode-status');
+            modeStatusElement.innerText = 'Chase Mode: ' + (data.chase_mode ? 'ON' : 'OFF');
+        });
+
+    </script>
+</body>
+</html>

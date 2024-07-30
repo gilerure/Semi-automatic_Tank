@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Stream</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Video Stream</h1>
+    <img id="video" src="http://172.25.96.203:5000/video_feed" width="640" height="640">
+    <h2>Recognition Results</h2>
+    <pre id="results"></pre>
+
+    <script>
+        const socket = io();
+
+        // 处理服务器响应并更新识别结果
+        socket.on('response_message', function(data) {
+            document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+        });
+
+        // 防止重复请求的标志
+        let processingStarted = false;
+
+        function startProcessing() {
+            if (!processingStarted) {
+                processingStarted = true;
+                fetch('/start_processing', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Processing started:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error starting processing:', error);
+                        processingStarted = false;  // 如果出错，重置标志
+                    });
+            }
+        }
+
+        window.onload = startProcessing;
+    </script>
+</body>
+</html>
